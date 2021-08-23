@@ -17,8 +17,8 @@ return [
             ],
             'paymentDomain' => [
                 'type' => 'textfield',
-                'desc' => 'Payment page domain (https://checkout.begateway.com)',
-                'value' => 'https://checkout.begateway.com',
+                'desc' => 'Payment page domain (checkout.begateway.com)',
+                'value' => 'checkout.begateway.com',
             ],
             'test' => [
                 'type' => 'combo-boolean',
