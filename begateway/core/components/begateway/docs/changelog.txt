@@ -1,0 +1,15 @@
+Changelog for BeGateWay.
+
+1.0.0-dev
+==============
+- New build script.
+- Add chunks
+- Add Resources
+
+1.0.1-pl
+==============
+- All functions moved to class file
+
+1.0.2-pl
+==============
+- Add Shop Public Key for check notification from begateway
