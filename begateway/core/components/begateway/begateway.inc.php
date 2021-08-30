@@ -182,56 +182,12 @@ if (isset($scriptProperties['action'])) {
             $data = json_decode($rawbody, true);
 
             // Check request signature
-            $a = 0;
-            $shopPublicKey = $modx->getOption('shopPublicKey', $scriptProperties, null);
-            if (isset($_SERVER['HTTP_CONTENT_SIGNATURE']) && !is_null($shopPublicKey)) {
-                $signature  = base64_decode($_SERVER['HTTP_CONTENT_SIGNATURE']);
-                $public_key = str_replace(array("\r\n", "\n"), '', $shopPublicKey);
-                $public_key = chunk_split($public_key, 64);
-                $public_key = "-----BEGIN PUBLIC KEY-----\n" . $public_key . "-----END PUBLIC KEY-----";
-                $key = openssl_pkey_get_public($public_key);
-                if ($key) {
-                    $a = openssl_verify($rawbody, $signature, $key, OPENSSL_ALGO_SHA256);
-                }
-            }
-            if ($a != 1) {
+            if ( !$pk_obj->isAuthorized() ) {
                 $errorCode = 400;
                 $errorMessage = 'Unauthorized Request';
                 return $pk_obj->setError($errorCode, $errorMessage);
             }
 
-// -------------
-//            error_log('Server = '. print_r($_SERVER, true) . PHP_EOL);
-//            if (isset($_SERVER['CONTENT_SIGNATURE']) && !is_null($shopPublicKey)) {
-//                $signature  = base64_decode($_SERVER['CONTENT_SIGNATURE']);
-//                $public_key = str_replace(array("\r\n", "\n"), '', $shopPublicKey);
-//                $public_key = chunk_split($public_key, 64);
-//                $public_key = "-----BEGIN PUBLIC KEY-----\n" . $public_key . "-----END PUBLIC KEY-----";
-//                $key = openssl_pkey_get_public($public_key);
-//                if ($key) {
-//                    return openssl_verify($rawbody, $signature, $key, OPENSSL_ALGO_SHA256) == 1;
-//                }
-//            }
-//
-//            $token = null;
-//
-//            if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
-//                $_id  = $_SERVER['PHP_AUTH_USER'];
-//                $_key = $_SERVER['PHP_AUTH_PW'];
-//            } elseif (isset($_SERVER['HTTP_AUTHORIZATION']) && !is_null($_SERVER['HTTP_AUTHORIZATION'])) {
-//                $token = $_SERVER['HTTP_AUTHORIZATION'];
-//            } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) && !is_null($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-//                $token = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
-//            }
-//
-//            if ($token != null) {
-//                if (strpos(strtolower($token), 'basic') === 0) {
-//                    list($_id, $_key) = explode(':', base64_decode(substr($token, 6)));
-//                }
-//            }
-//
-//            error_log($_id . ' == ' . $modx->getOption('shopId', $scriptProperties, '') . ' && ' . $_key . ' == ' . $modx->getOption('shopSecretKey', $scriptProperties, '') . PHP_EOL);
-// -----------
             if (!isset($_REQUEST['order_id']) || !isset($data['transaction']['status'])) {
                 $errorCode = 400;
                 $errorMessage = 'Bad Request';

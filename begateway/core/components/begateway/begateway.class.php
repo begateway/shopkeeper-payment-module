@@ -7,7 +7,7 @@ class BegatewayPayment
 {
 
     public $modx = null;
-    private $shopID;
+    private $shopId;
     private $shopSecretKey;
     private $shopPublicKey;
     private $test;
@@ -28,7 +28,7 @@ class BegatewayPayment
     }
 
     /**
-     * @param $shopID
+     * @param $shopId
      * @param $shopSecretKey
      * @param $test
      * @param $paymentDomain
@@ -38,9 +38,9 @@ class BegatewayPayment
      * @param $currencyMode
      * @param $currencyDefault
      */
-    public function setParams($shopID, $shopSecretKey, $shopPublicKey, $test, $paymentDomain, $success_url, $failure_url, $notify_url, $currencyMode, $currencyDefault)
+    public function setParams($shopId, $shopSecretKey, $shopPublicKey, $test, $paymentDomain, $success_url, $failure_url, $notify_url, $currencyMode, $currencyDefault)
     {
-        $this->shopID = $shopID;
+        $this->shopId = $shopId;
         $this->shopSecretKey = $shopSecretKey;
         $this->shopPublicKey = $shopPublicKey;
         $this->test = $test;
@@ -82,10 +82,8 @@ class BegatewayPayment
                     'description' => 'Order N: ' . $order['id'],
                     'tracking_id' => $order['id'],
                     'additional_data' => [
-                        'meta' => [
-                            'platform_data' => 'Shopkeeper3',
-                            'integration_data' => 'beGateway payment module v1.02'
-                        ],
+                        'platform_data' => 'Shopkeeper v3',
+                        'integration_data' => 'beGateway payment module v1'
                     ],
                 ],
                 'settings' => [
@@ -107,7 +105,7 @@ class BegatewayPayment
             ]
         ];
 
-        return $this->curlSubmit($this->paymentDomain . '/ctp/api/checkouts', $data, $this->shopID, $this->shopSecretKey);
+        return $this->curlSubmit($this->paymentDomain . '/ctp/api/checkouts', $data, $this->shopId, $this->shopSecretKey);
     }
 
     /**
@@ -290,6 +288,45 @@ class BegatewayPayment
         $this->modx->log(MODX_LOG_LEVEL_ERROR, $code . ": " . $message);
         header("{$_SERVER['SERVER_PROTOCOL']} " . $code . " " . $message);
         return '<h1>Error ' . $code . '</h1><p>' . $message . '</p>';
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAuthorized()
+    {
+        if (isset($_SERVER['HTTP_CONTENT_SIGNATURE']) && !is_null($this->shopPublicKey)) {
+            $signature  = base64_decode($_SERVER['HTTP_CONTENT_SIGNATURE']);
+            $public_key = str_replace(array("\r\n", "\n"), '', $this->shopPublicKey);
+            $public_key = chunk_split($public_key, 64);
+            $public_key = "-----BEGIN PUBLIC KEY-----\n" . $public_key . "-----END PUBLIC KEY-----";
+            $key = openssl_pkey_get_public($public_key);
+            if ($key) {
+                return openssl_verify(file_get_contents('php://input'), $signature, $key, OPENSSL_ALGO_SHA256) == 1;
+            }
+        }
+
+        $token = null;
+        $_id = null;
+        $_key = null;
+
+        if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
+            $_id  = $_SERVER['PHP_AUTH_USER'];
+            $_key = $_SERVER['PHP_AUTH_PW'];
+        } elseif (isset($_SERVER['HTTP_AUTHORIZATION']) && !is_null($_SERVER['HTTP_AUTHORIZATION'])) {
+            $token = $_SERVER['HTTP_AUTHORIZATION'];
+        } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) && !is_null($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $token = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
+
+        if ($token != null) {
+            if (strpos(strtolower($token), 'basic') === 0) {
+                list($_id, $_key) = explode(':', base64_decode(substr($token, 6)));
+            }
+        }
+
+        return $_id == $this->shopId
+            && $_key == $this->shopSecretKey;
     }
 
 }
