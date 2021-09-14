@@ -79,13 +79,11 @@ if (isset($scriptProperties['action'])) {
                 $errorCode = 500;
                 $errorMessage = 'Error Response: ' . $response->message;
                 return $pk_obj->setError($errorCode, $errorMessage);
-            }
-            if (isset($response->error)) {
+            } elseif (isset($response->error)) {
                 $errorCode = 500;
                 $errorMessage = 'Error Response: ' . $response->error;
                 return $pk_obj->setError($errorCode, $errorMessage);
-            }
-            if (!isset($response->checkout->token)) {
+            } elseif (!isset($response->checkout->token)) {
                 $errorCode = 500;
                 $errorMessage = 'Error Response: ' . 'Token not be Null';
                 return $pk_obj->setError($errorCode, $errorMessage);
@@ -152,13 +150,11 @@ if (isset($scriptProperties['action'])) {
                 $errorCode = 500;
                 $errorMessage = 'Error Response: ' . $response->message;
                 return $pk_obj->setError($errorCode, $errorMessage);
-            }
-            if (isset($response->error)) {
+            } elseif (isset($response->error)) {
                 $errorCode = 500;
                 $errorMessage = 'Error Response: ' . $response->error;
                 return $pk_obj->setError($errorCode, $errorMessage);
-            }
-            if (!isset($response->checkout->token)) {
+            } elseif (!isset($response->checkout->token)) {
                 $errorCode = 500;
                 $errorMessage = 'Error Response: ' . 'Token not be Null';
                 return $pk_obj->setError($errorCode, $errorMessage);

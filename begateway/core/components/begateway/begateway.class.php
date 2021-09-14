@@ -83,7 +83,7 @@ class BegatewayPayment
                     'tracking_id' => $order['id'],
                     'additional_data' => [
                         'platform_data' => 'Shopkeeper v3',
-                        'integration_data' => 'beGateway payment module v1'
+                        'integration_data' => 'beGateway payment module v1.0.3'
                     ],
                 ],
                 'settings' => [
@@ -101,127 +101,11 @@ class BegatewayPayment
                 ],
                 'transaction_type' => 'payment',
                 'version' => 2,
-                'test' => $this->test,
+                'test' => (boolean) $this->test,
             ]
         ];
 
         return $this->curlSubmit($this->paymentDomain . '/ctp/api/checkouts', $data, $this->shopId, $this->shopSecretKey);
-    }
-
-    /**
-     * Return Contact info in associative array
-     *
-     * @param $contacts
-     * @return array
-     */
-    public function getContactInfo($contacts)
-    {
-        $tmp_arr = array();
-        foreach( $contacts as $contact ) {
-            $tmp_arr[$contact['name']] = $contact['value'];
-        }
-
-        return $tmp_arr;
-    }
-
-    /**
-     * Get Purchase Items from Order
-     *
-     * @param $order_id
-     * @return array
-     */
-    public function getPurchases($order_id)
-    {
-        $output = array();
-
-        $query = $this->modx->newQuery('shk_purchases');
-        $query->where(array('order_id' => $order_id));
-        $query->sortby('id', 'asc');
-        $purchases = $this->modx->getIterator('shk_purchases', $query);
-
-        if ($purchases) {
-            foreach ($purchases as $purchase) {
-                $p_data = $purchase->toArray();
-
-                if (!empty($p_data['options'])) {
-                    $p_data['options'] = json_decode($p_data['options'], true);
-                }
-
-                $fields_data = array();
-                if(!empty($p_data['data'])) {
-                    $fields_data = json_decode($p_data['data'], true);
-                    unset($p_data['data']);
-                }
-
-                $purchase_data = array_merge($fields_data, $p_data);
-
-                array_push($output, $purchase_data);
-            }
-
-        }
-
-        return $output;
-    }
-
-    /**
-     * @param $resource_id
-     * @param null $order_id
-     * @return string
-     */
-    public function correctUrl($resource_id, $order_id = null)
-    {
-        $parameters = array();
-
-        if ($order_id) {
-            $parameters['order_id'] = $order_id;
-        }
-
-        $urlCorrectMode = $this->modx->makeUrl($resource_id, '', $parameters, 'full');
-
-        return htmlspecialchars_decode($urlCorrectMode);
-    }
-
-    /**
-     * @param $host
-     * @param $data
-     * @param $shopId
-     * @param $shopSecretKey
-     * @return mixed
-     */
-    public function curlSubmit($host, $data, $shopId, $shopSecretKey)
-    {
-        $process = curl_init($host);
-        $json = json_encode($data);
-
-        if (!empty($data)) {
-            curl_setopt($process, CURLOPT_HTTPHEADER,
-                array(
-                    'Accept: application/json',
-                    'Content-type: application/json',
-                    'X-API-Version: 2',
-                )
-            );
-            curl_setopt($process, CURLOPT_POST, 1);
-            curl_setopt($process, CURLOPT_POSTFIELDS, $json);
-        } else {
-            curl_setopt($process, CURLOPT_HTTPHEADER,
-                array(
-                    'Accept: application/json',
-                    'X-API-Version: 2',
-                ),
-        );
-        }
-
-        curl_setopt($process, CURLOPT_URL, $host);
-        curl_setopt($process, CURLOPT_USERPWD, $shopId . ":" . $shopSecretKey);
-        curl_setopt($process, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($process, CURLOPT_TIMEOUT, 30);
-        curl_setopt($process, CURLOPT_RETURNTRANSFER, TRUE);
-        curl_setopt($process, CURLOPT_SSL_VERIFYPEER, TRUE);
-        $response = curl_exec($process);
-        curl_close($process);
-
-        return json_decode($response);
     }
 
     /**
@@ -277,20 +161,6 @@ class BegatewayPayment
     }
 
     /**
-     * Set Errors params and header for error page
-     *
-     * @param $code
-     * @param $message
-     * @return string
-     */
-    public function setError($code, $message)
-    {
-        $this->modx->log(MODX_LOG_LEVEL_ERROR, $code . ": " . $message);
-        header("{$_SERVER['SERVER_PROTOCOL']} " . $code . " " . $message);
-        return '<h1>Error ' . $code . '</h1><p>' . $message . '</p>';
-    }
-
-    /**
      * @return bool
      */
     public function isAuthorized()
@@ -327,6 +197,136 @@ class BegatewayPayment
 
         return $_id == $this->shopId
             && $_key == $this->shopSecretKey;
+    }
+
+    /**
+     * Set Errors params and header for error page
+     *
+     * @param $code
+     * @param $message
+     * @return string
+     */
+    public function setError($code, $message)
+    {
+        $this->modx->log(MODX_LOG_LEVEL_ERROR, $code . ": " . $message);
+        header("{$_SERVER['SERVER_PROTOCOL']} " . $code . " " . $message);
+        return '<h1>Error ' . $code . '</h1><p>' . $message . '</p>';
+    }
+
+    /**
+     * Return Contact info in associative array
+     *
+     * @param $contacts
+     * @return array
+     */
+    private function getContactInfo($contacts)
+    {
+        $tmp_arr = array();
+        foreach( $contacts as $contact ) {
+            $tmp_arr[$contact['name']] = $contact['value'];
+        }
+
+        return $tmp_arr;
+    }
+
+    /**
+     * Get Purchase Items from Order
+     *
+     * @param $order_id
+     * @return array
+     */
+    private function getPurchases($order_id)
+    {
+        $output = array();
+
+        $query = $this->modx->newQuery('shk_purchases');
+        $query->where(array('order_id' => $order_id));
+        $query->sortby('id', 'asc');
+        $purchases = $this->modx->getIterator('shk_purchases', $query);
+
+        if ($purchases) {
+            foreach ($purchases as $purchase) {
+                $p_data = $purchase->toArray();
+
+                if (!empty($p_data['options'])) {
+                    $p_data['options'] = json_decode($p_data['options'], true);
+                }
+
+                $fields_data = array();
+                if(!empty($p_data['data'])) {
+                    $fields_data = json_decode($p_data['data'], true);
+                    unset($p_data['data']);
+                }
+
+                $purchase_data = array_merge($fields_data, $p_data);
+
+                array_push($output, $purchase_data);
+            }
+
+        }
+
+        return $output;
+    }
+
+    /**
+     * @param $resource_id
+     * @param null $order_id
+     * @return string
+     */
+    private function correctUrl($resource_id, $order_id = null)
+    {
+        $parameters = array();
+
+        if ($order_id) {
+            $parameters['order_id'] = $order_id;
+        }
+
+        $urlCorrectMode = $this->modx->makeUrl($resource_id, '', $parameters, 'full');
+
+        return htmlspecialchars_decode($urlCorrectMode);
+    }
+
+    /**
+     * @param $host
+     * @param $data
+     * @param $shopId
+     * @param $shopSecretKey
+     * @return mixed
+     */
+    private function curlSubmit($host, $data, $shopId, $shopSecretKey)
+    {
+        $process = curl_init($host);
+        $json = json_encode($data);
+
+        if (!empty($data)) {
+            curl_setopt($process, CURLOPT_HTTPHEADER,
+                array(
+                    'Accept: application/json',
+                    'Content-type: application/json',
+                    'X-API-Version: 2',
+                )
+            );
+            curl_setopt($process, CURLOPT_POST, 1);
+            curl_setopt($process, CURLOPT_POSTFIELDS, $json);
+        } else {
+            curl_setopt($process, CURLOPT_HTTPHEADER,
+                array(
+                    'Accept: application/json',
+                    'X-API-Version: 2',
+                ),
+        );
+        }
+
+        curl_setopt($process, CURLOPT_URL, $host);
+        curl_setopt($process, CURLOPT_USERPWD, $shopId . ":" . $shopSecretKey);
+        curl_setopt($process, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($process, CURLOPT_TIMEOUT, 30);
+        curl_setopt($process, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($process, CURLOPT_SSL_VERIFYPEER, TRUE);
+        $response = curl_exec($process);
+        curl_close($process);
+
+        return json_decode($response);
     }
 
 }
